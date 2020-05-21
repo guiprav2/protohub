@@ -2,7 +2,7 @@ import Collection from 'nedb';
 import makeFeathersService from 'feathers-nedb';
 import memoize from 'lodash/memoize.js';
 
-let storagePath = `${process.cwd()}/storage`;
+let storagePath = process.env.STORAGE_PATH || `${process.cwd()}/storage`;
 
 let serviceKey = (ns, collection) => `${ns}/${collection}`;
 
