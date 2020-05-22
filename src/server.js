@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import feathersService from './feathersService.js';
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 let app = express();
@@ -18,7 +19,9 @@ app.use(rateLimit({
   max: rateLimitMaxReqs,
 }));
 
+app.use(helmet());
 app.use(cors());
+
 app.use(express.json());
 
 app.use((req, res, next) => {
