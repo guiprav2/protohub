@@ -36,6 +36,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/status', (req, res) => res.send('OK'));
+
 app.post('/:ns/:collection', async (req, res) => {
   try {
     let { ns, collection } = req.params;
