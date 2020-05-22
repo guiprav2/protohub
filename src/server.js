@@ -22,9 +22,6 @@ app.use(rateLimit({
 app.use(cors());
 app.use(bodyParser.json());
 
-let reqLog = (msg, { req, ...more }) =>
-  console.log(msg, JSON.stringify({ ip: req.ip, ...more }));
-
 app.use((req, res, next) => {
   let url = new URL(`http://unused/${req.originalUrl}`);
   let path = decodeURIComponent(url.pathname).slice(1);
@@ -46,6 +43,19 @@ app.post('/:ns/:collection', async (req, res) => {
     let sv = await feathersService(ns, collection);
 
     res.send(await sv.create(req.body, { query: req.query }));
+  }
+  catch (err) {
+    console.error(err);
+    res.sendStatus(500);
+  }
+});
+
+app.get('/:ns/:collection/:id', async (req, res) => {
+  try {
+    let { ns, collection, id } = req.params;
+    let sv = await feathersService(ns, collection);
+
+    res.send(await sv.get(id));
   }
   catch (err) {
     console.error(err);
