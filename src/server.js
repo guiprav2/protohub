@@ -1,4 +1,3 @@
-import bodyParser from 'body-parser';
 import cors from 'cors';
 import express from 'express';
 import feathersService from './feathersService.js';
@@ -6,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 
 let app = express();
 let port = process.env.PORT || 3000;
-let trustProxy = JSON.parse(process.env.TRUST_PROXY || 'false');
+let trustProxy = JSON.parse(process.env.TRUST_PROXY || '0');
 let rateLimitWindow = JSON.parse(process.env.RATE_LIMIT_WINDOW || '60000');
 let rateLimitMaxReqs = JSON.parse(process.env.RATE_LIMIT_MAX_REQS || '50');
 
@@ -20,7 +19,7 @@ app.use(rateLimit({
 }));
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
 app.use((req, res, next) => {
   let url = new URL(`http://unused/${req.originalUrl}`);
