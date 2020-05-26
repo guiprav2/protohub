@@ -23,7 +23,13 @@ let feathersService = memoize(async (ns, collection) => {
     });
   });
 
-  return makeFeathersService({ Model, multi: true });
+  return makeFeathersService({
+    Model,
+    multi: true,
+
+    // TODO: Make configurable?
+    whitelist: ['$exists', '$regex', '$size', '$elemMatch'],
+  });
 }, serviceKey);
 
 export default feathersService;
