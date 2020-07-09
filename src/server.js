@@ -54,6 +54,21 @@ app.post('/:ns/:collection', async (req, res) => {
   }
 });
 
+app.put('/:ns/:collection/:id', async (req, res) => {
+  try {
+    let { ns, collection, id } = req.params;
+    let sv = await feathersService(ns, collection);
+
+    res.send(await sv.update(id, req.body, {
+      nedb: { upsert: true },
+    }));
+  }
+  catch (err) {
+    console.error(err);
+    res.sendStatus(500);
+  }
+});
+
 app.get('/:ns/:collection/:id', async (req, res) => {
   try {
     let { ns, collection, id } = req.params;
