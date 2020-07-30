@@ -40,6 +40,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/status', (req, res) => res.send('OK'));
+app.post('/:ns/log', (req, res) => res.sendStatus(204));
 
 app.post('/:ns/:collection', async (req, res) => {
   try {
