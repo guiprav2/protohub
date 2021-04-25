@@ -1,14 +1,18 @@
 import cors from 'cors';
+import crypto from 'crypto';
+import errorMiddleware from './errorMiddleware.js';
 import express from 'express';
 import feathersService from './feathersService.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import scrub from './scrubber.js';
 
 let app = express();
 let port = process.env.PORT || 3000;
 let trustProxy = JSON.parse(process.env.TRUST_PROXY || '0');
 let rateLimitWindow = JSON.parse(process.env.RATE_LIMIT_WINDOW || '60000');
 let rateLimitMaxReqs = JSON.parse(process.env.RATE_LIMIT_MAX_REQS || '50');
+let scrubPasswords = x => scrub(x, ['password'], 'test');
 
 if (trustProxy) {
   app.enable('trust proxy');
@@ -25,6 +29,13 @@ app.use(cors());
 app.use(express.json());
 
 app.use((req, res, next) => {
+  req.id = crypto.randomUUID();
+  scrubPasswords(req.query);
+  if (req.body) { scrubPasswords(req.body) }
+  next();
+});
+
+app.use((req, res, next) => {
   let url = new URL(`http://unused/${req.originalUrl}`);
   let path = decodeURIComponent(url.pathname).slice(1);
 
@@ -34,6 +45,7 @@ app.use((req, res, next) => {
     path,
     query: req.query,
     body: req.body,
+    reqId: req.id,
   }));
 
   next();
@@ -158,6 +170,8 @@ app.delete('/:ns/:collection', async (req, res) => {
     res.sendStatus(500);
   }
 });
+
+app.use(errorMiddleware);
 
 app.listen(port);
 console.log(`Listening on :${port}...`);
