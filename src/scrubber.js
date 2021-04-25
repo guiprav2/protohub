@@ -3,7 +3,6 @@ function scrub(x, ks, substitute) {
     if (ks.includes(k)) { x[k] = substitute }
     else if (typeof v === 'object') { scrub(v, ks, substitute) }
   }
-  throw new Error('derp');
 
   return x;
 }
