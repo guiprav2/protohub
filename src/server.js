@@ -1,21 +1,20 @@
-import * as Crdt from 'crdt';
 import cors from 'cors';
 import crypto from 'crypto';
 import errorMiddleware from './errorMiddleware.js';
-import express from 'express';
 import ews from 'express-ws';
-import wss from 'websocket-stream/stream.js';
+import express from 'express';
 import feathersService from './feathersService.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import scrub from './scrubber.js';
+import wss from 'websocket-stream/stream.js';
+import { setupWSConnection } from 'y-websocket/bin/utils';
 
 let app = express();
 let port = process.env.PORT || 3000;
 let trustProxy = JSON.parse(process.env.TRUST_PROXY || '0');
 let rateLimitWindow = JSON.parse(process.env.RATE_LIMIT_WINDOW || '60000');
 let rateLimitMaxReqs = JSON.parse(process.env.RATE_LIMIT_MAX_REQS || '50');
-let crdt = {};
 let scrubPasswords = x => scrub(x, ['password'], 'test');
 
 if (trustProxy) {
@@ -62,25 +61,7 @@ app.use((req, res, next) => {
 app.get('/status', (req, res) => res.send('OK'));
 app.post('/:ns/log', (req, res) => res.sendStatus(204));
 
-app.ws('/crdt/:ns/:id', (ws, req) => {
-  let { ns, id } = req.params, docs = crdt[ns] = crdt[ns] || {};
-  let doc = docs[id] = docs[id];
-
-  if (!doc) {
-    doc = docs[id] = { doc: new Crdt.Doc(), peerDocs: new Set() };
-    doc.doc.on('row_update', x => console.log('UPDATE', reqPath(req), JSON.stringify(x)));
-  }
-
-
-  let peerDoc = new Crdt.Doc();
-  doc.peerDocs.add(peerDoc);
-
-  let docStream = doc.doc.createStream();
-  docStream.pipe(peerDoc.createStream()).pipe(docStream);
-
-  let stream = wss(ws, { binary: true });
-  stream.pipe(peerDoc.createStream()).pipe(stream);
-});
+app.ws('/yjs/*', setupWSConnection);
 
 app.post('/:ns/:collection', async (req, res) => {
   try {
