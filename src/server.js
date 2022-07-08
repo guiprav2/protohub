@@ -7,6 +7,7 @@ import feathersService from './feathersService.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import scrub from './scrubber.js';
+import webPush from 'web-push';
 import wss from 'websocket-stream/stream.js';
 import { setupWSConnection } from 'y-websocket/bin/utils';
 
@@ -34,8 +35,8 @@ app.use(express.json());
 
 app.use((req, res, next) => {
   req.id = crypto.randomUUID();
-  scrubPasswords(req.query);
-  if (req.body) { scrubPasswords(req.body) }
+  Object.keys(req.query).length && scrubPasswords(req.query);
+  req.body && scrubPasswords(req.body);
   next();
 });
 
@@ -60,6 +61,23 @@ app.use((req, res, next) => {
 
 app.get('/status', (req, res) => res.send('OK'));
 app.post('/:ns/log', (req, res) => res.sendStatus(204));
+
+if (process.env.VAPID_PUB && process.env.VAPID_PVT) {
+  webPush.setVapidDetails(
+    'mailto:guilherme.pra.vieira@gmail.com',
+    process.env.VAPID_PUB,
+    process.env.VAPID_PVT,
+  );
+
+  app.post('/push', async (req, res) => {
+    try {
+      res.send(await webPush.sendNotification(req.body.sub, req.body.body));
+    }
+    catch (err) {
+      res.send(err);
+    }
+  });
+}
 
 app.ws('/yjs/*', setupWSConnection);
 
