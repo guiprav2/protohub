@@ -71,9 +71,10 @@ if (process.env.VAPID_PUB && process.env.VAPID_PVT) {
 
   app.post('/push', async (req, res) => {
     try {
-      res.send(await webPush.sendNotification(req.body.sub, req.body.body));
+      res.send(await webPush.sendNotification(req.body.sub, JSON.stringify(req.body.body)));
     }
     catch (err) {
+      console.error(err);
       res.send(err);
     }
   });
