@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import scrub from './scrubber.js';
 import webPush from 'web-push';
+import { nanoid } from 'nanoid';
 import { setupWSConnection } from 'y-websocket/bin/utils';
 
 let app = express();
@@ -84,17 +85,50 @@ let wsRooms = {};
 app.ws('/rooms/:id', (ws, req) => {
   let room = wsRooms[req.params.id];
   if (!room) {
-    room = wsRooms[req.params.id] = { owner: ws, peers: [] };
-    ws.send(JSON.stringify({ role: 'owner' }));
+    room = wsRooms[req.params.id] = { owner: ws, peers: {} };
+
     ws.on('message', msg => {
-      for (let peer of room.peers) { peer.send(msg) }
+      try {
+        msg = JSON.parse(msg);
+      } catch (err) {
+        ws.send(JSON.stringify({ error: 'bad payload' }));
+        console.error(err);
+        return;
+      }
+
+      if (msg.to === '*') {
+        for (let peer of Object.values(room.peers)) { peer.send(JSON.stringify(msg)) }
+      } else {
+        room.peers[msg.to].send(JSON.stringify(msg));
+      }
     });
-    ws.on('close', () => { delete wsRooms[req.params.id] });
+
+    ws.on('close', () => {
+      for (let peer of Object.values(room.peers)) { peer.close() }
+      delete wsRooms[req.params.id];
+    });
+
+    ws.send(JSON.stringify({ role: 'owner' }));
   } else {
-    room.peers.push(ws);
-    ws.send(JSON.stringify({ role: 'peer' }));
-    ws.on('message', msg => room.owner.send(msg));
-    ws.on('close', () => room.peers.splice(room.peers.indexOf(ws), 1));
+    let id = nanoid();
+    room.peers[id] = ws;
+    ws.send(JSON.stringify({ role: 'peer', id }));
+    room.owner.send(JSON.stringify({ open: id }));
+    ws.on('message', msg => {
+      let body;
+      try {
+        body = JSON.parse(msg);
+      } catch (err) {
+        ws.send(JSON.stringify({ error: 'bad payload' }));
+        console.error(err);
+        return;
+      }
+      room.owner.send(JSON.stringify({ from: id, body: JSON.parse(msg) }));
+    });
+    ws.on('close', () => {
+      room.owner.send(JSON.stringify({ close: id }));
+      delete room.peers[id];
+    });
   }
 });
 
