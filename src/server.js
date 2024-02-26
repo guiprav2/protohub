@@ -8,7 +8,6 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import scrub from './scrubber.js';
 import webPush from 'web-push';
-import wss from 'websocket-stream/stream.js';
 import { setupWSConnection } from 'y-websocket/bin/utils';
 
 let app = express();
@@ -79,6 +78,25 @@ if (process.env.VAPID_PUB && process.env.VAPID_PVT) {
     }
   });
 }
+
+let wsRooms = {};
+
+app.ws('/rooms/:id', (ws, req) => {
+  let room = wsRooms[req.params.id];
+  if (!room) {
+    room = wsRooms[req.params.id] = { owner: ws, peers: [] };
+    ws.send(JSON.stringify({ role: 'owner' }));
+    ws.on('message', msg => {
+      for (let peer of room.peers) { peer.send(msg) }
+    });
+    ws.on('close', () => { delete wsRooms[req.params.id] });
+  } else {
+    room.peers.push(ws);
+    ws.send(JSON.stringify({ role: 'peer' }));
+    ws.on('message', msg => room.owner.send(msg));
+    ws.on('close', () => room.peers.splice(room.peers.indexOf(ws), 1));
+  }
+});
 
 app.ws('/yjs/*', setupWSConnection);
 
