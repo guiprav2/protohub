@@ -19,6 +19,7 @@
     "lodash": "^4.17.15",
     "nanoid": "^5.0.6",
     "nedb": "^1.8.0",
+    "node-fetch": "^3.3.2",
     "web-push": "^3.5.0",
     "websocket-stream": "^5.5.2",
     "y-websocket": "^1.4.3",

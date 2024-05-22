@@ -5,6 +5,7 @@ import errorMiddleware from './errorMiddleware.js';
 import ews from 'express-ws';
 import express from 'express';
 import feathersService from './feathersService.js';
+import fetch from 'node-fetch';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import scrub from './scrubber.js';
