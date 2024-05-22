@@ -1,3 +1,4 @@
+import busboy from 'busboy';
 import cors from 'cors';
 import crypto from 'crypto';
 import errorMiddleware from './errorMiddleware.js';
@@ -246,6 +247,37 @@ app.delete('/:ns/:collection', async (req, res) => {
     res.send(await sv.remove(null, req.body, { query: req.query }));
   }
   catch (err) {
+    console.error(err);
+    res.sendStatus(500);
+  }
+});
+
+app.post('/netlify/deploy/:id', async (req, res) => {
+  try {
+    let bus = busboy({ headers: req.headers });
+
+    bus.on('file', async (field, file, name, encoding, mimeType) => {
+      try {
+        let res2 = await fetch(`https://api.netlify.com/api/v1/sites/${req.params.id}/deploys`, {
+          method: 'POST',
+          headers: {
+            Authorization: req.headers.authorization,
+            'Content-Type': 'application/zip',
+          },
+          body: file,
+          duplex: 'half',
+        });
+
+        if (!res2.ok) { console.log(await res2.json()); throw new Error('Deploy failed') }
+        res.send(await res2.json());
+      } catch (err) {
+        console.error(err);
+        res.sendStatus(500);
+      }
+    });
+
+    req.pipe(bus);
+  } catch (err) {
     console.error(err);
     res.sendStatus(500);
   }
