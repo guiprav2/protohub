@@ -9,6 +9,7 @@
     "start": "node src/server.js"
   },
   "dependencies": {
+    "@stoplight/y-websocket": "github:stoplightio/y-websocket",
     "busboy": "^1.6.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
@@ -22,7 +23,6 @@
     "node-fetch": "^3.3.2",
     "web-push": "^3.5.0",
     "websocket-stream": "^5.5.2",
-    "y-websocket": "^1.4.3",
     "yjs": "^13.5.38"
   },
   "devDependencies": {

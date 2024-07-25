@@ -11,7 +11,7 @@ import rateLimit from 'express-rate-limit';
 import scrub from './scrubber.js';
 import webPush from 'web-push';
 import { nanoid } from 'nanoid';
-import { setupWSConnection } from 'y-websocket/bin/utils';
+import { setupWSConnection } from '@stoplight/y-websocket/bin/utils';
 
 let app = express();
 let port = process.env.PORT || 3000;
@@ -134,7 +134,20 @@ app.ws('/rooms/:id', (ws, req) => {
   }
 });
 
-app.ws('/yjs/*', setupWSConnection);
+let yjsro = {}; // FIXME: Persistence
+app.ws('/yjs/:id', (ws, req) => {
+  if (req.params.id.startsWith('ro--')) {
+    let originalId = yjsro[req.params.id];
+    if (!originalId) { console.log('[YJS] Read-only endpoint not found:', req.params.id); ws.close(); return }
+    req.url = `/yjs/${originalId}/.websocket`;
+    ws.readOnly = true;
+    console.log('Opening read-only endpoint:', req.params.id, '=>',originalId);
+  } else if (req.query.roid) {
+    yjsro[req.query.roid] = req.params.id;
+    console.log('Creating read-only endpoint:', req.query.roid, '=>', req.params.id);
+  }
+  setupWSConnection(ws, req);
+});
 
 app.post('/:ns/:collection', async (req, res) => {
   try {
